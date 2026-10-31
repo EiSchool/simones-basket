@@ -161,6 +161,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
         <div id="gcashBox" class="qr hidden">
           <img id="qrImg" alt="GCash QR code">
           <div id="qrAmount" style="font-weight:800"></div>
+          <button type="button" class="btn alt" id="copyQrOrder" style="margin-top:10px">Copy GCash QR</button>
           <p id="noQr" class="muted hidden" style="margin:0">No GCash QR yet. The owner can upload it on the Settings page.</p>
         </div>
       </div>
@@ -227,9 +228,10 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
     <div id="sheetFlag" class="flag"></div>
     <img id="sheetImg" alt="Receipt">
     <div class="row">
-      <button type="button" class="btn alt" id="copyAgain" style="margin-top:0">Copy</button>
+      <button type="button" class="btn alt" id="copyAgain" style="margin-top:0">Copy receipt</button>
       <button type="button" class="btn alt hidden" id="shareBtn" style="margin-top:0">Share</button>
     </div>
+    <button type="button" class="btn alt hidden" id="copyQrSheet">Copy GCash QR</button>
     <button type="button" class="btn warn hidden" id="voidBtn">Void this order</button>
     <button type="button" class="btn" id="closeSheet">Done</button>
   </div>
@@ -509,6 +511,7 @@ function showQr() {
   const has = !!S.qr;
   $('qrImg').classList.toggle('hidden', !has);
   $('qrAmount').classList.toggle('hidden', !has);
+  $('copyQrOrder').classList.toggle('hidden', !has);
   $('noQr').classList.toggle('hidden', has);
   $('qrPreview').classList.toggle('hidden', !has);
   $('qrNone').classList.toggle('hidden', has);
@@ -597,7 +600,7 @@ function wrapText(ctx, text, width) {
   return lines;
 }
 
-function paintReceipt(ctx, r, logo, qr) {
+function paintReceipt(ctx, r, logo) {
   const W = 720, L = 56, R = W - 56, BLUE = '#97C6D3', PINK = '#B9565B', BROWN = '#6B5750', SOFT = '#9A8880';
   const font = (weight, size, family) => { ctx.font = weight + ' ' + size + 'px ' + (family || 'Nunito, sans-serif'); };
   const text = (s, x, y, align, color) => { ctx.textAlign = align || 'left'; ctx.fillStyle = color || BROWN; ctx.fillText(s, x, y); };
@@ -660,15 +663,6 @@ function paintReceipt(ctx, r, logo, qr) {
     y += 38;
     pair('Change', peso(r.change), y, true);
     y += 38;
-  } else if (qr) {
-    y += 6;
-    const box = 340, scale = Math.min(box / qr.width, box / qr.height);
-    const w = qr.width * scale, h = qr.height * scale;
-    ctx.drawImage(qr, (W - w) / 2, y, w, h);
-    y += h + 38;
-    font(800, 24);
-    text('Scan to pay with GCash', W / 2, y, 'center', PINK);
-    y += 30;
   }
 
   y += 44;
@@ -679,9 +673,9 @@ function paintReceipt(ctx, r, logo, qr) {
 
 async function receiptBlob(r) {
   await fontsReady();
-  const [logo, qr] = await Promise.all([loadImage(LOGO), r.payment === 'GCash' && S.qr ? loadImage(S.qr) : null]);
+  const logo = await loadImage(LOGO);
   const probe = document.createElement('canvas').getContext('2d');
-  const height = paintReceipt(probe, r, logo, qr);
+  const height = paintReceipt(probe, r, logo);
   const canvas = document.createElement('canvas');
   canvas.width = 720;
   canvas.height = height;
@@ -691,7 +685,7 @@ async function receiptBlob(r) {
   ctx.strokeStyle = '#97C6D3';
   ctx.lineWidth = 8;
   ctx.strokeRect(14, 14, 692, height - 28);
-  paintReceipt(ctx, r, logo, qr);
+  paintReceipt(ctx, r, logo);
   return new Promise((ok, fail) => canvas.toBlob(b => b ? ok(b) : fail(new Error('Could not make the receipt picture.')), 'image/png'));
 }
 
@@ -706,12 +700,33 @@ function showSheet(receipt, blob, copied, fromSales) {
   $('sheetImg').src = URL.createObjectURL(blob);
   const file = new File([blob], receipt.no + '.png', { type: 'image/png' });
   $('shareBtn').classList.toggle('hidden', !(navigator.canShare && navigator.canShare({ files: [file] })));
+  $('copyQrSheet').classList.toggle('hidden', !(receipt.payment === 'GCash' && S.qr));
   $('voidBtn').classList.toggle('hidden', !(fromSales && S.role === 'owner' && receipt.status !== 'Voided'));
   delete $('voidBtn').dataset.armed;
   delete $('voidBtn').dataset.label;
   $('voidBtn').textContent = 'Void this order';
   $('sheet').classList.remove('hidden');
 }
+
+function qrBlob() {
+  return loadImage(S.qr).then(img => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    return new Promise(ok => canvas.toBlob(ok, 'image/png'));
+  });
+}
+
+async function copyQr() {
+  const ok = await copyImage(qrBlob());
+  if (ok) return toast('GCash QR copied. Paste it in the chat.');
+  toast('Press and hold the QR to copy it.');
+  if (!$('sheet').classList.contains('hidden')) $('sheetImg').src = S.qr;
+}
+
+$('copyQrOrder').addEventListener('click', copyQr);
+$('copyQrSheet').addEventListener('click', copyQr);
 
 $('copyAgain').addEventListener('click', async () => {
   const ok = await copyImage(S.blob);
