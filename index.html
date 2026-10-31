@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simone's Basket</title>
+<meta name="theme-color" content="#FFFFFF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Simone's Basket">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Marcellus&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#97C6D3;--blue-soft:#E8F3F6;--blue-deep:#4F8FA3;--pink:#DC8485;--pink-deep:#B9565B;--pink-soft:#FBEDED;--brown:#6B5750;--brown-soft:#9A8880;--line:#EADFDB;--paper:#FFFCFA;--white:#FFFFFF}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--paper);color:var(--brown);font:600 16px/1.35 Nunito,system-ui,sans-serif}
+body{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+body.no-bar{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+h2{font:400 21px/1.2 Marcellus,Georgia,serif;margin:0 0 10px;letter-spacing:.3px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--white);outline:none;font-size:16px}
+input:focus{border-color:var(--blue)}
+label{display:block;font-size:14px;margin-bottom:12px}
+label>span{display:block;margin-bottom:4px;color:var(--brown)}
+.hidden{display:none!important}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--white);border-bottom:3px dashed var(--blue)}
+.top img{height:50px;width:auto;display:block}
+.top .clock{margin-left:auto;text-align:right;font-size:13px;line-height:1.25;color:var(--brown-soft)}
+.top .clock b{display:block;color:var(--brown);font-size:15px}
+main{max-width:640px;margin:0 auto;padding:14px 16px}
+.card{background:var(--white);border:1.5px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+.muted{color:var(--brown-soft);font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{position:relative;min-height:88px;padding:10px 12px;border:2px solid var(--blue);border-radius:14px;background:var(--white);text-align:left;display:flex;flex-direction:column;justify-content:space-between;transition:transform .08s}
+.tile:active{transform:scale(.97)}
+.tile b{font-weight:800;overflow-wrap:anywhere}
+.tile small{display:flex;justify-content:space-between;gap:6px;font-size:13px;color:var(--brown-soft)}
+.tile small em{font-style:normal;color:var(--pink-deep);font-weight:800}
+.tile.on{background:var(--pink-soft);border-color:var(--pink)}
+.tile[disabled]{opacity:.5;border-color:var(--line);border-style:dashed;cursor:not-allowed}
+.tile .badge{position:absolute;top:-8px;right:-6px;min-width:28px;height:28px;padding:0 7px;border-radius:14px;background:var(--pink-deep);color:var(--white);font:800 15px/28px Nunito,sans-serif;text-align:center}
+.line{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--line)}
+.line:first-child{border-top:0}
+.line .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.line .nm small{display:block;color:var(--brown-soft);font-size:13px}
+.line .amt{font-weight:800;white-space:nowrap}
+.step{width:34px;height:34px;border-radius:50%;background:var(--blue-soft);color:var(--blue-deep);font:800 20px/1 Nunito,sans-serif;flex:none}
+.count{min-width:22px;text-align:center;font-weight:800}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.seg button{padding:13px;border:2px solid var(--blue);border-radius:12px;background:var(--white);font-weight:800}
+.seg button.on{background:var(--pink-deep);border-color:var(--pink-deep);color:var(--white)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 12px}
+.chips button{padding:7px 12px;border-radius:18px;background:var(--blue-soft);color:var(--blue-deep);font-weight:800;font-size:14px}
+.change{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px;border-radius:12px;background:var(--blue-soft);font-weight:800}
+.change b{font-size:22px;color:var(--blue-deep)}
+.change.short{background:var(--pink-soft)}
+.change.short b{color:var(--pink-deep);font-size:16px}
+.qr{text-align:center}
+.qr img{display:block;width:100%;max-width:280px;margin:0 auto 8px;border-radius:12px;border:1.5px solid var(--line)}
+.bar{position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));z-index:6;display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--white);border-top:1.5px solid var(--line)}
+.bar .sum{flex:none;font-size:13px;line-height:1.1}
+.bar .sum b{display:block;font-size:22px;color:var(--pink-deep);font-weight:800}
+.btn{display:block;width:100%;padding:14px;border-radius:12px;background:var(--pink-deep);color:var(--white);font-weight:800;text-align:center}
+.btn.alt{background:var(--blue-soft);color:var(--blue-deep)}
+.btn.warn{background:var(--white);color:var(--pink-deep);border:1.5px solid var(--pink)}
+.btn[disabled]{opacity:.6}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:7;display:flex;background:var(--white);border-top:3px dashed var(--blue);padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{flex:1;height:58px;font-size:12px;font-weight:800;color:var(--brown-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tabs button.on{color:var(--pink-deep)}
+.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.menu-row{padding:12px 0;border-top:1px dashed var(--line)}
+.menu-row:first-child{border-top:0;padding-top:0}
+.menu-row .cols{display:grid;grid-template-columns:1fr 1fr 40px;gap:8px;align-items:end;margin-top:8px}
+.menu-row label{margin:0}
+.menu-row .del{height:46px;color:var(--pink-deep);font:800 22px/1 Nunito,sans-serif}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--blue-soft);border-radius:14px;padding:10px;text-align:center;font-size:13px}
+.stat b{display:block;font-size:17px;font-weight:800;color:var(--blue-deep);overflow-wrap:anywhere}
+.stat.main{grid-column:1/-1;background:var(--pink-soft)}
+.stat.main b{font-size:26px;color:var(--pink-deep)}
+.order{display:flex;width:100%;gap:10px;align-items:center;padding:10px 0;border-top:1px dashed var(--line);text-align:left}
+.order:first-child{border-top:0}
+.order .who{flex:1;min-width:0;overflow-wrap:anywhere}
+.order .who small{display:block;color:var(--brown-soft);font-size:13px}
+.order .amt{text-align:right;font-weight:800;white-space:nowrap}
+.order .amt small{display:block;font-weight:700;font-size:12px;color:var(--blue-deep)}
+.order.void .who,.order.void .amt{opacity:.5;text-decoration:line-through}
+.login{max-width:360px;margin:0 auto;padding:24px 16px;text-align:center}
+.login img{width:100%;max-width:280px;margin-bottom:12px}
+.login label{text-align:left}
+.login input{text-align:center;font-size:22px;letter-spacing:6px}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(107,87,80,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{width:100%;max-width:520px;max-height:94vh;overflow:auto;background:var(--paper);border-radius:20px 20px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet img{display:block;width:100%;border:1.5px solid var(--line);border-radius:10px;margin-bottom:12px;background:var(--white)}
+.flag{padding:9px 12px;margin-bottom:10px;border-radius:10px;text-align:center;font-weight:800;font-size:14px;background:var(--blue-soft);color:var(--blue-deep)}
+.flag.bad{background:var(--pink-soft);color:var(--pink-deep)}
+.sheet .btn{margin-top:10px}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(138px + env(safe-area-inset-bottom));z-index:30;max-width:480px;margin:0 auto;padding:12px 14px;border-radius:12px;background:var(--brown);color:var(--white);text-align:center;font-weight:700}
+.loading{padding:40px;text-align:center;color:var(--brown-soft)}
+</style>
+</head>
+<body class="no-bar">
+
+<div id="login" class="login hidden">
+  <img id="loginLogo" alt="Simone's Basket">
+  <form id="pinForm">
+    <div id="firstRun" class="hidden">
+      <p class="muted">First time here. Choose two PINs of 4 to 8 digits. Staff use theirs to take orders. Yours also opens the menu and settings pages.</p>
+      <label><span>Owner PIN</span><input id="newOwner" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+      <label><span>Staff PIN</span><input id="newStaff" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+    </div>
+    <label id="pinField"><span>Enter your PIN</span><input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+    <button class="btn" id="pinBtn" type="submit">Open</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <img id="topLogo" alt="Simone's Basket">
+    <div class="clock"><b id="clockTime"></b><span id="clockDate"></span></div>
+  </header>
+
+  <main>
+    <section id="page-order">
+      <div class="card">
+        <h2>Customer</h2>
+        <label><span>Customer name</span><input id="customer" autocomplete="off" maxlength="120"></label>
+        <label style="margin:0"><span>Address</span><input id="address" autocomplete="off" maxlength="300"></label>
+      </div>
+      <div class="card">
+        <h2>Today's menu</h2>
+        <div id="tiles" class="tiles"></div>
+        <p id="noMenu" class="muted hidden" style="margin:0">No menu yet for today. The owner can add it on the Menu page.</p>
+      </div>
+      <div id="cartCard" class="card hidden">
+        <h2>Order</h2>
+        <div id="cart"></div>
+      </div>
+      <div class="card">
+        <h2>Payment</h2>
+        <div class="seg">
+          <button type="button" id="payCash">Cash</button>
+          <button type="button" id="payGcash">GCash</button>
+        </div>
+        <div id="cashBox" class="hidden">
+          <label><span>Change for how much?</span><input id="cash" type="number" inputmode="decimal" min="0" step="any"></label>
+          <div id="chips" class="chips"></div>
+          <div id="change" class="change"><span>Change</span><b>₱0.00</b></div>
+        </div>
+        <div id="gcashBox" class="qr hidden">
+          <img id="qrImg" alt="GCash QR code">
+          <div id="qrAmount" style="font-weight:800"></div>
+          <p id="noQr" class="muted hidden" style="margin:0">No GCash QR yet. The owner can upload it on the Settings page.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-menu" class="hidden">
+      <div class="card">
+        <h2>Today's menu</h2>
+        <div id="menuRows"></div>
+        <p id="menuEmpty" class="muted hidden" style="margin:0 0 12px">Nothing on today's menu yet.</p>
+        <div class="row">
+          <button type="button" class="btn alt" id="addBread">Add bread</button>
+          <button type="button" class="btn alt" id="reuseMenu">Use last menu</button>
+        </div>
+        <button type="button" class="btn" id="saveMenu" style="margin-top:10px">Save today's menu</button>
+      </div>
+    </section>
+
+    <section id="page-orders" class="hidden">
+      <div id="stats" class="stats"></div>
+      <div class="card">
+        <h2>Today's orders</h2>
+        <div id="orders"></div>
+      </div>
+    </section>
+
+    <section id="page-settings" class="hidden">
+      <div class="card qr" style="text-align:left">
+        <h2>GCash QR</h2>
+        <img id="qrPreview" alt="Current GCash QR code" class="hidden">
+        <p id="qrNone" class="muted" style="margin-top:0">No QR uploaded yet.</p>
+        <input id="qrFile" type="file" accept="image/*" class="hidden">
+        <button type="button" class="btn" id="qrPick">Upload GCash QR picture</button>
+      </div>
+      <div class="card">
+        <h2>Change PINs</h2>
+        <label><span>New owner PIN</span><input id="ownerPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+        <label><span>New staff PIN</span><input id="staffPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+        <button type="button" class="btn" id="savePins">Save PINs</button>
+      </div>
+      <div class="card">
+        <h2>Database</h2>
+        <a id="sheetLink" class="btn alt" target="_blank" rel="noopener" style="text-decoration:none">Open the spreadsheet</a>
+      </div>
+    </section>
+    <button type="button" class="btn warn" id="logout">Log out</button>
+  </main>
+
+  <div id="bar" class="bar hidden">
+    <div class="sum">Total<b id="total">₱0.00</b></div>
+    <button type="button" class="btn" id="checkout">Save &amp; copy receipt</button>
+  </div>
+
+  <nav class="tabs">
+    <button type="button" data-page="order"><svg viewBox="0 0 24 24"><path d="M5 9h14l-1.4 11H6.4z"/><path d="M8 9l4-6 4 6"/></svg>Order</button>
+    <button type="button" data-page="menu"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Menu</button>
+    <button type="button" data-page="orders"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Sales</button>
+    <button type="button" data-page="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Settings</button>
+  </nav>
+</div>
+
+<div id="sheet" class="sheet hidden">
+  <div>
+    <div id="sheetFlag" class="flag"></div>
+    <img id="sheetImg" alt="Receipt">
+    <div class="row">
+      <button type="button" class="btn alt" id="copyAgain" style="margin-top:0">Copy</button>
+      <button type="button" class="btn alt hidden" id="shareBtn" style="margin-top:0">Share</button>
+    </div>
+    <button type="button" class="btn warn hidden" id="voidBtn">Void this order</button>
+    <button type="button" class="btn" id="closeSheet">Done</button>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbzZlmrr1FsXUTkPk-EDjFGX2ALedcjaJc3OT6zPDr6H_L9R58spjOP4YNl6xmoDfhty/exec';
+const LOGO = 'logo.jpg';
+const $ = id => document.getElementById(id);
+const S = { pin: '', role: '', menu: [], qr: '', cart: {}, payment: '', clientId: '', draft: [], sheetUrl: '', page: 'order', receipt: null, blob: null, refreshed: 0 };
+
+const peso = n => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const remember = pin => { try { pin ? localStorage.setItem('sbPin', pin) : localStorage.removeItem('sbPin'); } catch (e) {} };
+const recall = () => { try { return localStorage.getItem('sbPin') || ''; } catch (e) { return ''; } };
+
+// "omit" sends no Google login, which keeps Google's multi-account redirect from breaking the request.
+async function api(fn, ...args) {
+  let data;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }) });
+    data = await res.json();
+  } catch (e) {
+    throw new Error('Could not reach the server. Check the internet and try again.');
+  }
+  if (data.error) throw new Error(data.error);
+  return data.ok;
+}
+
+function errText(e) {
+  return String(e && e.message || e || 'Something went wrong.').replace(/^(Exception|Error):\s*/, '');
+}
+
+let toastTimer;
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
+}
+
+function busy(btn, on, text) {
+  if (on) { btn.dataset.label = btn.textContent; btn.textContent = text; }
+  else if (btn.dataset.label) btn.textContent = btn.dataset.label;
+  btn.disabled = on;
+}
+
+function tick() {
+  const now = new Date(), tz = { timeZone: 'Asia/Manila' };
+  $('clockTime').textContent = now.toLocaleTimeString('en-US', { ...tz, hour: 'numeric', minute: '2-digit' });
+  $('clockDate').textContent = now.toLocaleDateString('en-US', { ...tz, month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* ---------- Login ---------- */
+
+async function start() {
+  $('loginLogo').src = $('topLogo').src = LOGO;
+  showLogin(true);
+  try {
+    const st = await api('status');
+    if (!st.ready) { $('firstRun').classList.remove('hidden'); $('pinField').classList.add('hidden'); $('pinBtn').textContent = 'Save PINs'; S.firstRun = true; return; }
+    const saved = recall();
+    if (saved) await enter(saved).catch(() => { remember(''); showLogin(true); });
+  } catch (e) { toast(errText(e)); }
+}
+
+function showLogin(on) {
+  $('login').classList.toggle('hidden', !on);
+  $('app').classList.toggle('hidden', on);
+}
+
+async function enter(pin) {
+  const d = await api('bootstrap', pin);
+  Object.assign(S, { pin, role: d.role, menu: d.menu, qr: d.qr, sheetUrl: d.sheetUrl, refreshed: Date.now() });
+  remember(pin);
+  $('sheetLink').href = d.sheetUrl || '#';
+  document.querySelector('[data-page=menu]').classList.toggle('hidden', d.role !== 'owner');
+  document.querySelector('[data-page=settings]').classList.toggle('hidden', d.role !== 'owner');
+  showQr();
+  newOrder();
+  showLogin(false);
+  go('order');
+}
+
+$('pinForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('pinBtn');
+  busy(btn, true, 'Opening…');
+  try {
+    if (S.firstRun) {
+      const owner = $('newOwner').value, staff = $('newStaff').value;
+      await api('setupPins', owner, staff);
+      S.firstRun = false;
+      await enter(owner);
+    } else {
+      await enter($('pin').value);
+    }
+    $('pin').value = $('newOwner').value = $('newStaff').value = '';
+  } catch (err) { toast(errText(err)); }
+  busy(btn, false);
+});
+
+$('logout').addEventListener('click', () => {
+  remember('');
+  S.pin = '';
+  showLogin(true);
+  document.body.classList.add('no-bar');
+});
+
+/* ---------- Pages ---------- */
+
+function go(page) {
+  S.page = page;
+  ['order', 'menu', 'orders', 'settings'].forEach(p => $('page-' + p).classList.toggle('hidden', p !== page));
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
+  $('bar').classList.toggle('hidden', page !== 'order');
+  document.body.classList.toggle('no-bar', page !== 'order');
+  $('logout').classList.toggle('hidden', page === 'order');
+  window.scrollTo(0, 0);
+  if (page === 'order') reloadMenu();
+  if (page === 'menu') loadDraft();
+  if (page === 'orders') loadOrders();
+  if (page === 'settings') showQr();
+}
+
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => go(b.dataset.page)));
+
+async function reloadMenu() {
+  renderOrder();
+  if (Date.now() - S.refreshed < 15000) return;
+  try {
+    S.menu = await api('refreshMenu', S.pin);
+    S.refreshed = Date.now();
+    renderOrder();
+  } catch (e) { toast(errText(e)); }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && S.pin && S.page === 'order') reloadMenu();
+});
+
+/* ---------- Taking an order ---------- */
+
+function newOrder() {
+  S.cart = {};
+  S.payment = '';
+  S.clientId = newId();
+  $('customer').value = $('address').value = $('cash').value = '';
+  renderOrder();
+}
+
+function total() {
+  return S.menu.reduce((sum, m) => sum + (S.cart[m.name] || 0) * m.price, 0);
+}
+
+function renderOrder() {
+  Object.keys(S.cart).forEach(name => {
+    const m = S.menu.find(x => x.name === name);
+    if (!m) delete S.cart[name];
+    else if (S.cart[name] > m.left) S.cart[name] = m.left;
+    if (!S.cart[name]) delete S.cart[name];
+  });
+  const tiles = $('tiles'), cart = $('cart');
+  tiles.textContent = cart.textContent = '';
+  $('noMenu').classList.toggle('hidden', S.menu.length > 0);
+  S.menu.forEach(m => {
+    const qty = S.cart[m.name] || 0, tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'tile' + (qty ? ' on' : '');
+    tile.disabled = m.left <= 0;
+    tile.innerHTML = '<b></b><small><em></em><span></span></small>';
+    tile.querySelector('b').textContent = m.name;
+    tile.querySelector('em').textContent = peso(m.price);
+    tile.querySelector('span').textContent = m.left > 0 ? (m.left - qty) + ' left' : 'Sold out';
+    if (qty) {
+      const badge = document.createElement('i');
+      badge.className = 'badge';
+      badge.style.fontStyle = 'normal';
+      badge.textContent = qty;
+      tile.appendChild(badge);
+    }
+    tile.addEventListener('click', () => bump(m, 1));
+    tiles.appendChild(tile);
+    if (!qty) return;
+
+    const line = document.createElement('div');
+    line.className = 'line';
+    line.innerHTML = '<div class="nm"><span></span><small></small></div><button type="button" class="step" aria-label="Remove one">−</button><span class="count"></span><button type="button" class="step" aria-label="Add one">+</button><span class="amt"></span>';
+    line.querySelector('.nm span').textContent = m.name;
+    line.querySelector('small').textContent = peso(m.price) + ' each';
+    line.querySelector('.count').textContent = qty;
+    line.querySelector('.amt').textContent = peso(qty * m.price);
+    const [minus, plus] = line.querySelectorAll('.step');
+    minus.addEventListener('click', () => bump(m, -1));
+    plus.addEventListener('click', () => bump(m, 1));
+    cart.appendChild(line);
+  });
+  $('cartCard').classList.toggle('hidden', !cart.children.length);
+  renderTotals();
+}
+
+function bump(m, by) {
+  const next = (S.cart[m.name] || 0) + by;
+  if (next > m.left) return toast('Only ' + m.left + ' left of ' + m.name + '.');
+  S.cart[m.name] = Math.max(next, 0);
+  renderOrder();
+}
+
+function renderTotals() {
+  const sum = total();
+  $('total').textContent = peso(sum);
+  $('qrAmount').textContent = 'Amount to pay: ' + peso(sum);
+  $('payCash').classList.toggle('on', S.payment === 'Cash');
+  $('payGcash').classList.toggle('on', S.payment === 'GCash');
+  $('cashBox').classList.toggle('hidden', S.payment !== 'Cash');
+  $('gcashBox').classList.toggle('hidden', S.payment !== 'GCash');
+
+  const chips = $('chips');
+  chips.textContent = '';
+  [['Exact', sum]].concat([100, 200, 500, 1000].filter(v => v > sum).map(v => [peso(v).replace('.00', ''), v])).forEach(([label, value]) => {
+    if (!value) return;
+    const c = document.createElement('button');
+    c.type = 'button';
+    c.textContent = label;
+    c.addEventListener('click', () => { $('cash').value = value; renderChange(); });
+    chips.appendChild(c);
+  });
+  renderChange();
+}
+
+function renderChange() {
+  const box = $('change'), value = box.querySelector('b'), cash = parseFloat($('cash').value), sum = total();
+  const short = cash < sum;
+  box.classList.toggle('short', short);
+  value.textContent = short ? 'Short by ' + peso(sum - cash) : peso(cash >= sum ? cash - sum : 0);
+}
+
+function showQr() {
+  const has = !!S.qr;
+  $('qrImg').classList.toggle('hidden', !has);
+  $('qrAmount').classList.toggle('hidden', !has);
+  $('noQr').classList.toggle('hidden', has);
+  $('qrPreview').classList.toggle('hidden', !has);
+  $('qrNone').classList.toggle('hidden', has);
+  if (has) $('qrImg').src = $('qrPreview').src = S.qr;
+}
+
+$('cash').addEventListener('input', renderChange);
+$('payCash').addEventListener('click', () => { S.payment = 'Cash'; renderTotals(); });
+$('payGcash').addEventListener('click', () => { S.payment = 'GCash'; renderTotals(); });
+
+function collectOrder() {
+  const order = {
+    clientId: S.clientId,
+    customer: $('customer').value.trim(),
+    address: $('address').value.trim(),
+    payment: S.payment,
+    cash: parseFloat($('cash').value),
+    items: Object.keys(S.cart).map(name => ({ name, qty: S.cart[name] }))
+  };
+  if (!order.customer) return { error: 'Enter the customer name.' };
+  if (!order.items.length) return { error: 'Tap at least one bread.' };
+  if (!order.payment) return { error: 'Choose Cash or GCash.' };
+  if (order.payment === 'Cash' && !(order.cash >= total())) return { error: 'Enter how much cash the customer is paying with.' };
+  return { order };
+}
+
+// Runs inside the tap so the phone allows the clipboard write. The picture is handed over
+// as a promise: it only exists once the spreadsheet has accepted the order.
+function checkout() {
+  const { order, error } = collectOrder();
+  if (error) return toast(error);
+  const btn = $('checkout');
+  busy(btn, true, 'Saving…');
+  const saved = api('saveOrder', S.pin, order);
+  const blob = saved.then(receiptBlob);
+  const copied = copyImage(blob);
+  Promise.all([saved, blob, copied]).then(([receipt, png, ok]) => {
+    receipt.items.forEach(l => {
+      const m = S.menu.find(x => x.name === l.name);
+      if (m) { m.left -= l.qty; m.sold += l.qty; }
+    });
+    newOrder();
+    S.refreshed = 0;
+    showSheet(receipt, png, ok, false);
+  }).catch(e => toast(errText(e))).finally(() => busy(btn, false));
+}
+
+$('checkout').addEventListener('click', checkout);
+
+function copyImage(blob) {
+  try {
+    return navigator.clipboard.write([new ClipboardItem({ 'image/png': Promise.resolve(blob) })]).then(() => true, () => false);
+  } catch (e) {
+    return Promise.resolve(false);
+  }
+}
+
+/* ---------- Receipt picture ---------- */
+
+function loadImage(src) {
+  return new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = fail;
+    img.src = src;
+  });
+}
+
+function fontsReady() {
+  const load = Promise.all(['400 60px "Great Vibes"', '400 30px Marcellus', '600 28px Nunito', '800 28px Nunito'].map(f => document.fonts.load(f, 'Aa₱')));
+  return Promise.race([load, new Promise(ok => setTimeout(ok, 1500))]).catch(() => {});
+}
+
+function wrapText(ctx, text, width) {
+  const lines = [];
+  let line = '';
+  String(text).split(/\s+/).forEach(word => {
+    const test = line ? line + ' ' + word : word;
+    if (line && ctx.measureText(test).width > width) { lines.push(line); line = word; }
+    else line = test;
+  });
+  lines.push(line);
+  return lines;
+}
+
+function paintReceipt(ctx, r, logo, qr) {
+  const W = 720, L = 56, R = W - 56, BLUE = '#97C6D3', PINK = '#B9565B', BROWN = '#6B5750', SOFT = '#9A8880';
+  const font = (weight, size, family) => { ctx.font = weight + ' ' + size + 'px ' + (family || 'Nunito, sans-serif'); };
+  const text = (s, x, y, align, color) => { ctx.textAlign = align || 'left'; ctx.fillStyle = color || BROWN; ctx.fillText(s, x, y); };
+  const rule = y => { ctx.save(); ctx.strokeStyle = BLUE; ctx.lineWidth = 3; ctx.setLineDash([12, 9]); ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(R, y); ctx.stroke(); ctx.restore(); };
+  const pair = (label, value, y, strong) => {
+    font(strong ? 800 : 600, strong ? 28 : 25);
+    text(label, L, y, 'left', strong ? BROWN : SOFT);
+    text(value, R, y, 'right', BROWN);
+  };
+
+  const lh = logo.height * 380 / logo.width;
+  ctx.drawImage(logo, (W - 380) / 2, 40, 380, lh);
+  let y = 40 + lh + 34;
+  font(400, 30, 'Marcellus, Georgia, serif');
+  text('Order Receipt', W / 2, y, 'center');
+  y += 36;
+  font(700, 23);
+  text(r.no, W / 2, y, 'center', SOFT);
+  y += 34;
+  font(800, 25);
+  text(r.date + '  ·  ' + r.time, W / 2, y, 'center', PINK);
+  y += 28;
+  rule(y);
+  y += 44;
+
+  font(800, 28);
+  wrapText(ctx, r.customer, R - L).forEach(l => { text(l, L, y); y += 36; });
+  if (r.address) {
+    font(600, 24);
+    wrapText(ctx, r.address, R - L).forEach(l => { text(l, L, y, 'left', SOFT); y += 32; });
+  }
+  y += 4;
+  rule(y);
+  y += 44;
+
+  r.items.forEach(item => {
+    font(800, 26);
+    wrapText(ctx, item.name, R - L - 170).forEach((l, i) => {
+      text(l, L, y);
+      if (!i) text(peso(item.amount), R, y, 'right');
+      y += 33;
+    });
+    font(600, 22);
+    text(item.qty + ' × ' + peso(item.price), L, y - 3, 'left', SOFT);
+    y += 38;
+  });
+  rule(y - 16);
+  y += 34;
+
+  font(800, 32);
+  text('TOTAL', L, y);
+  font(800, 40);
+  text(peso(r.total), R, y + 2, 'right', PINK);
+  y += 52;
+
+  pair('Payment', r.payment, y);
+  y += 38;
+  if (r.payment === 'Cash') {
+    pair('Cash', peso(r.cash), y);
+    y += 38;
+    pair('Change', peso(r.change), y, true);
+    y += 38;
+  } else if (qr) {
+    y += 6;
+    const box = 340, scale = Math.min(box / qr.width, box / qr.height);
+    const w = qr.width * scale, h = qr.height * scale;
+    ctx.drawImage(qr, (W - w) / 2, y, w, h);
+    y += h + 38;
+    font(800, 24);
+    text('Scan to pay with GCash', W / 2, y, 'center', PINK);
+    y += 30;
+  }
+
+  y += 44;
+  font(400, 52, '"Great Vibes", cursive');
+  text('Thank you!', W / 2, y, 'center', '#DC8485');
+  return y + 56;
+}
+
+async function receiptBlob(r) {
+  await fontsReady();
+  const [logo, qr] = await Promise.all([loadImage(LOGO), r.payment === 'GCash' && S.qr ? loadImage(S.qr) : null]);
+  const probe = document.createElement('canvas').getContext('2d');
+  const height = paintReceipt(probe, r, logo, qr);
+  const canvas = document.createElement('canvas');
+  canvas.width = 720;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, 720, height);
+  ctx.strokeStyle = '#97C6D3';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(14, 14, 692, height - 28);
+  paintReceipt(ctx, r, logo, qr);
+  return new Promise((ok, fail) => canvas.toBlob(b => b ? ok(b) : fail(new Error('Could not make the receipt picture.')), 'image/png'));
+}
+
+function showSheet(receipt, blob, copied, fromSales) {
+  S.receipt = receipt;
+  S.blob = blob;
+  const flag = $('sheetFlag');
+  flag.classList.toggle('hidden', copied === null);
+  flag.classList.toggle('bad', copied === false);
+  flag.textContent = copied ? 'Receipt copied. Paste it in the chat.' : 'Saved. Press and hold the receipt to copy it.';
+  URL.revokeObjectURL($('sheetImg').src);
+  $('sheetImg').src = URL.createObjectURL(blob);
+  const file = new File([blob], receipt.no + '.png', { type: 'image/png' });
+  $('shareBtn').classList.toggle('hidden', !(navigator.canShare && navigator.canShare({ files: [file] })));
+  $('voidBtn').classList.toggle('hidden', !(fromSales && S.role === 'owner' && receipt.status !== 'Voided'));
+  delete $('voidBtn').dataset.armed;
+  delete $('voidBtn').dataset.label;
+  $('voidBtn').textContent = 'Void this order';
+  $('sheet').classList.remove('hidden');
+}
+
+$('copyAgain').addEventListener('click', async () => {
+  const ok = await copyImage(S.blob);
+  const flag = $('sheetFlag');
+  flag.classList.remove('hidden');
+  flag.classList.toggle('bad', !ok);
+  flag.textContent = ok ? 'Receipt copied. Paste it in the chat.' : 'Press and hold the receipt to copy it.';
+});
+
+$('shareBtn').addEventListener('click', () => {
+  navigator.share({ files: [new File([S.blob], S.receipt.no + '.png', { type: 'image/png' })] }).catch(() => {});
+});
+
+$('closeSheet').addEventListener('click', () => {
+  $('sheet').classList.add('hidden');
+  if (S.page === 'order') { reloadMenu(); window.scrollTo(0, 0); }
+});
+
+$('voidBtn').addEventListener('click', async () => {
+  const btn = $('voidBtn');
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = 'Tap again to void ' + S.receipt.no;
+    return;
+  }
+  busy(btn, true, 'Voiding…');
+  try {
+    await api('voidOrder', S.pin, S.receipt.no);
+    $('sheet').classList.add('hidden');
+    S.refreshed = 0;
+    loadOrders();
+  } catch (e) { toast(errText(e)); }
+  busy(btn, false);
+});
+
+/* ---------- Menu page ---------- */
+
+async function loadDraft() {
+  S.draft = S.menu.map(m => ({ ...m }));
+  renderDraft();
+  try {
+    S.menu = await api('refreshMenu', S.pin);
+    S.refreshed = Date.now();
+    S.draft = S.menu.map(m => ({ ...m }));
+    renderDraft();
+  } catch (e) { toast(errText(e)); }
+}
+
+function renderDraft() {
+  const box = $('menuRows');
+  box.textContent = '';
+  $('menuEmpty').classList.toggle('hidden', S.draft.length > 0);
+  $('reuseMenu').classList.toggle('hidden', S.draft.length > 0);
+  S.draft.forEach((d, i) => {
+    const row = document.createElement('div');
+    row.className = 'menu-row';
+    row.innerHTML = '<label><span>Bread name</span><input data-f="name" maxlength="80"></label>' +
+      '<div class="cols"><label><span>Quantity</span><input data-f="qty" type="number" inputmode="numeric" min="0" step="1"></label>' +
+      '<label><span>Price (₱)</span><input data-f="price" type="number" inputmode="decimal" min="0" step="any"></label>' +
+      '<button type="button" class="del" aria-label="Remove bread">×</button></div>';
+    row.querySelectorAll('input').forEach(input => {
+      input.value = d[input.dataset.f] == null ? '' : d[input.dataset.f];
+      input.addEventListener('input', () => { d[input.dataset.f] = input.value; });
+    });
+    if (d.sold) {
+      const note = document.createElement('div');
+      note.className = 'muted';
+      note.style.marginTop = '4px';
+      note.textContent = 'Sold ' + d.sold + ' today, ' + d.left + ' left';
+      row.appendChild(note);
+    }
+    row.querySelector('.del').addEventListener('click', () => { S.draft.splice(i, 1); renderDraft(); });
+    box.appendChild(row);
+  });
+}
+
+$('addBread').addEventListener('click', () => {
+  S.draft.push({ name: '', qty: '', price: '' });
+  renderDraft();
+  const inputs = $('menuRows').querySelectorAll('[data-f=name]');
+  inputs[inputs.length - 1].focus();
+});
+
+$('reuseMenu').addEventListener('click', async () => {
+  const btn = $('reuseMenu');
+  busy(btn, true, 'Loading…');
+  try {
+    const rows = await api('lastMenu', S.pin);
+    if (!rows.length) toast('There is no earlier menu yet.');
+    S.draft = rows;
+    renderDraft();
+  } catch (e) { toast(errText(e)); }
+  busy(btn, false);
+});
+
+$('saveMenu').addEventListener('click', async () => {
+  const btn = $('saveMenu');
+  busy(btn, true, 'Saving…');
+  try {
+    const rows = S.draft.map(d => ({ name: d.name, qty: d.qty === '' ? NaN : Number(d.qty), price: d.price === '' ? NaN : Number(d.price) }));
+    if (rows.some(r => isNaN(r.qty) || isNaN(r.price))) throw new Error('Fill in the quantity and price of every bread.');
+    S.menu = await api('saveMenu', S.pin, rows);
+    S.refreshed = Date.now();
+    S.draft = S.menu.map(m => ({ ...m }));
+    renderDraft();
+    toast("Today's menu is saved.");
+  } catch (e) { toast(errText(e)); }
+  busy(btn, false);
+});
+
+/* ---------- Sales page ---------- */
+
+async function loadOrders() {
+  const box = $('orders');
+  box.innerHTML = '<div class="loading">Loading…</div>';
+  $('stats').textContent = '';
+  try {
+    const list = await api('todaysOrders', S.pin), paid = list.filter(o => o.status !== 'Voided');
+    const sum = type => paid.filter(o => !type || o.payment === type).reduce((n, o) => n + o.total, 0);
+    $('stats').innerHTML = '';
+    [['Sales today', peso(sum()), 'main'], ['Orders', paid.length], ['Cash', peso(sum('Cash'))], ['GCash', peso(sum('GCash'))]].forEach(([label, value, cls]) => {
+      const s = document.createElement('div');
+      s.className = 'stat ' + (cls || '');
+      s.innerHTML = '<b></b>';
+      s.firstChild.textContent = value;
+      s.appendChild(document.createTextNode(label));
+      $('stats').appendChild(s);
+    });
+    box.textContent = list.length ? '' : 'No orders yet today.';
+    list.forEach(o => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'order' + (o.status === 'Voided' ? ' void' : '');
+      row.innerHTML = '<div class="who"><span></span><small></small></div><div class="amt"><span></span><small></small></div>';
+      row.querySelector('.who span').textContent = o.customer;
+      row.querySelector('.who small').textContent = o.time + ' · ' + o.no;
+      row.querySelector('.amt span').textContent = peso(o.total);
+      row.querySelector('.amt small').textContent = o.status === 'Voided' ? 'Voided' : o.payment;
+      row.addEventListener('click', async () => {
+        try { showSheet(o, await receiptBlob(o), null, true); } catch (e) { toast(errText(e)); }
+      });
+      box.appendChild(row);
+    });
+  } catch (e) { box.textContent = errText(e); }
+}
+
+/* ---------- Settings page ---------- */
+
+$('qrPick').addEventListener('click', () => $('qrFile').click());
+
+$('qrFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const btn = $('qrPick');
+  busy(btn, true, 'Uploading…');
+  try {
+    const url = URL.createObjectURL(file), img = await loadImage(url);
+    URL.revokeObjectURL(url);
+    const scale = Math.min(1, 900 / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    let data = canvas.toDataURL('image/png');
+    if (data.length > 800000) data = canvas.toDataURL('image/jpeg', .92);
+    await api('saveQr', S.pin, data);
+    S.qr = data;
+    showQr();
+    toast('GCash QR saved.');
+  } catch (err) { toast(errText(err)); }
+  busy(btn, false);
+});
+
+$('savePins').addEventListener('click', async () => {
+  const btn = $('savePins'), owner = $('ownerPin').value, staff = $('staffPin').value;
+  busy(btn, true, 'Saving…');
+  try {
+    await api('changePins', S.pin, owner, staff);
+    S.pin = owner;
+    remember(owner);
+    $('ownerPin').value = $('staffPin').value = '';
+    toast('PINs changed.');
+  } catch (e) { toast(errText(e)); }
+  busy(btn, false);
+});
+
+tick();
+setInterval(tick, 20000);
+start();
+</script>
+</body>
+</html>
