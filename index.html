@@ -98,6 +98,10 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
 .sheet{position:fixed;inset:0;z-index:20;background:rgba(107,87,80,.45);display:flex;align-items:flex-end;justify-content:center}
 .sheet>div{width:100%;max-width:520px;max-height:94vh;overflow:auto;background:var(--paper);border-radius:20px 20px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom))}
 .sheet img{display:block;width:100%;border:1.5px solid var(--line);border-radius:10px;margin-bottom:12px;background:var(--white)}
+.suggest{margin:-6px 0 12px;border:1.5px solid var(--blue);border-radius:12px;overflow:hidden;background:var(--white)}
+.suggest button{display:block;width:100%;padding:10px 14px;text-align:left;border-top:1px dashed var(--line);font-weight:800;overflow-wrap:anywhere}
+.suggest button:first-child{border-top:0}
+.suggest small{display:block;color:var(--brown-soft);font-size:13px;font-weight:600}
 .flag{padding:9px 12px;margin-bottom:10px;border-radius:10px;text-align:center;font-weight:800;font-size:14px;background:var(--blue-soft);color:var(--blue-deep)}
 .flag.bad{background:var(--pink-soft);color:var(--pink-deep)}
 .sheet .btn{margin-top:10px}
@@ -131,6 +135,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
       <div class="card">
         <h2>Customer</h2>
         <label><span>Customer name</span><input id="customer" autocomplete="off" maxlength="120"></label>
+        <div id="suggest" class="suggest hidden"></div>
         <label style="margin:0"><span>Address</span><input id="address" autocomplete="off" maxlength="300"></label>
       </div>
       <div class="card">
@@ -236,7 +241,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
 const API_URL = 'https://script.google.com/macros/s/AKfycbzZlmrr1FsXUTkPk-EDjFGX2ALedcjaJc3OT6zPDr6H_L9R58spjOP4YNl6xmoDfhty/exec';
 const LOGO = 'logo.jpg';
 const $ = id => document.getElementById(id);
-const S = { pin: '', role: '', menu: [], qr: '', cart: {}, payment: '', clientId: '', draft: [], sheetUrl: '', page: 'order', receipt: null, blob: null, refreshed: 0 };
+const S = { pin: '', role: '', menu: [], customers: [], qr: '', cart: {}, payment: '', clientId: '', draft: [], sheetUrl: '', page: 'order', receipt: null, blob: null, refreshed: 0 };
 
 const peso = n => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -301,7 +306,7 @@ function showLogin(on) {
 
 async function enter(pin) {
   const d = await api('bootstrap', pin);
-  Object.assign(S, { pin, role: d.role, menu: d.menu, qr: d.qr, sheetUrl: d.sheetUrl, refreshed: Date.now() });
+  Object.assign(S, { pin, role: d.role, menu: d.menu, customers: d.customers || [], qr: d.qr, sheetUrl: d.sheetUrl, refreshed: Date.now() });
   remember(pin);
   $('sheetLink').href = d.sheetUrl || '#';
   document.querySelector('[data-page=menu]').classList.toggle('hidden', d.role !== 'owner');
@@ -365,6 +370,7 @@ async function reloadMenu() {
     S.menu = await api('refreshMenu', S.pin);
     S.refreshed = Date.now();
     renderOrder();
+    S.customers = await api('refreshCustomers', S.pin);
   } catch (e) { toast(errText(e)); }
 }
 
@@ -379,7 +385,38 @@ function newOrder() {
   S.payment = '';
   S.clientId = newId();
   $('customer').value = $('address').value = $('cash').value = '';
+  renderSuggest();
   renderOrder();
+}
+
+function renderSuggest() {
+  const box = $('suggest'), typed = $('customer').value.trim().toLowerCase();
+  const starts = c => c.name.toLowerCase().startsWith(typed);
+  const hits = typed ? S.customers.filter(c => c.name.toLowerCase().includes(typed)).sort((a, b) => starts(b) - starts(a)).slice(0, 5) : [];
+  box.textContent = '';
+  hits.forEach(c => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.textContent = c.name;
+    if (c.address) {
+      const line = document.createElement('small');
+      line.textContent = c.address;
+      item.appendChild(line);
+    }
+    item.addEventListener('mousedown', e => e.preventDefault());
+    item.addEventListener('click', () => {
+      $('customer').value = c.name;
+      $('address').value = c.address;
+      box.classList.add('hidden');
+    });
+    box.appendChild(item);
+  });
+  box.classList.toggle('hidden', !hits.length);
+}
+
+function keepCustomer(r) {
+  const same = c => c.name.toLowerCase() === r.customer.toLowerCase() && (!r.address || c.address.toLowerCase() === r.address.toLowerCase());
+  if (!S.customers.some(same)) S.customers.unshift({ name: r.customer, address: r.address });
 }
 
 function total() {
@@ -478,6 +515,8 @@ function showQr() {
   if (has) $('qrImg').src = $('qrPreview').src = S.qr;
 }
 
+$('customer').addEventListener('input', renderSuggest);
+$('customer').addEventListener('blur', () => setTimeout(() => $('suggest').classList.add('hidden'), 200));
 $('cash').addEventListener('input', renderChange);
 $('payCash').addEventListener('click', () => { S.payment = 'Cash'; renderTotals(); });
 $('payGcash').addEventListener('click', () => { S.payment = 'GCash'; renderTotals(); });
@@ -513,6 +552,7 @@ function checkout() {
       const m = S.menu.find(x => x.name === l.name);
       if (m) { m.left -= l.qty; m.sold += l.qty; }
     });
+    keepCustomer(receipt);
     newOrder();
     S.refreshed = 0;
     showSheet(receipt, png, ok, false);
