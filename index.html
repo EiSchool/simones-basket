@@ -119,7 +119,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
       <label><span>Owner PIN</span><input id="newOwner" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
       <label><span>Staff PIN</span><input id="newStaff" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
     </div>
-    <label id="pinField"><span>Enter your PIN</span><input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+    <label id="pinField"><span>Enter your PIN</span><input id="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label>
     <button class="btn" id="pinBtn" type="submit">Open</button>
   </form>
 </div>
@@ -188,6 +188,15 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
       </div>
     </section>
 
+    <section id="page-customers" class="hidden">
+      <div class="card">
+        <h2>Customers</h2>
+        <label><span>Search name or address</span><input id="customerSearch" autocomplete="off" maxlength="120"></label>
+        <p id="customerCount" class="muted" style="margin:0 0 4px"></p>
+        <div id="customerList"></div>
+      </div>
+    </section>
+
     <section id="page-settings" class="hidden">
       <div class="card qr" style="text-align:left">
         <h2>GCash QR</h2>
@@ -219,6 +228,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
     <button type="button" data-page="order"><svg viewBox="0 0 24 24"><path d="M5 9h14l-1.4 11H6.4z"/><path d="M8 9l4-6 4 6"/></svg>Order</button>
     <button type="button" data-page="menu"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Menu</button>
     <button type="button" data-page="orders"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Sales</button>
+    <button type="button" data-page="customers"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 4.5-6 8-6s6.5 1.5 8 6"/></svg>Customers</button>
     <button type="button" data-page="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Settings</button>
   </nav>
 </div>
@@ -247,8 +257,7 @@ const S = { pin: '', role: '', menu: [], customers: [], qr: '', cart: {}, paymen
 
 const peso = n => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-const remember = pin => { try { pin ? localStorage.setItem('sbPin', pin) : localStorage.removeItem('sbPin'); } catch (e) {} };
-const recall = () => { try { return localStorage.getItem('sbPin') || ''; } catch (e) { return ''; } };
+const LOCK_AFTER = 10 * 60 * 1000;
 
 // "omit" sends no Google login, which keeps Google's multi-account redirect from breaking the request.
 async function api(fn, ...args) {
@@ -293,11 +302,11 @@ function tick() {
 async function start() {
   $('loginLogo').src = $('topLogo').src = LOGO;
   showLogin(true);
+  // Older versions kept the PIN on the device, so clear any copy left behind.
+  try { localStorage.removeItem('sbPin'); } catch (e) {}
   try {
     const st = await api('status');
     if (!st.ready) { $('firstRun').classList.remove('hidden'); $('pinField').classList.add('hidden'); $('pinBtn').textContent = 'Save PINs'; S.firstRun = true; return; }
-    const saved = recall();
-    if (saved) await enter(saved).catch(() => { remember(''); showLogin(true); });
   } catch (e) { toast(errText(e)); }
 }
 
@@ -309,9 +318,9 @@ function showLogin(on) {
 async function enter(pin) {
   const d = await api('bootstrap', pin);
   Object.assign(S, { pin, role: d.role, menu: d.menu, customers: d.customers || [], qr: d.qr, sheetUrl: d.sheetUrl, refreshed: Date.now() });
-  remember(pin);
   $('sheetLink').href = d.sheetUrl || '#';
   document.querySelector('[data-page=menu]').classList.toggle('hidden', d.role !== 'owner');
+  document.querySelector('[data-page=customers]').classList.toggle('hidden', d.role !== 'owner');
   document.querySelector('[data-page=settings]').classList.toggle('hidden', d.role !== 'owner');
   showQr();
   newOrder();
@@ -340,18 +349,20 @@ $('pinForm').addEventListener('submit', async e => {
   busy(btn, false);
 });
 
-$('logout').addEventListener('click', () => {
-  remember('');
-  S.pin = '';
+function lock() {
+  Object.assign(S, { pin: '', role: '', customers: [], qr: '' });
+  $('sheet').classList.add('hidden');
   showLogin(true);
   document.body.classList.add('no-bar');
-});
+}
+
+$('logout').addEventListener('click', lock);
 
 /* ---------- Pages ---------- */
 
 function go(page) {
   S.page = page;
-  ['order', 'menu', 'orders', 'settings'].forEach(p => $('page-' + p).classList.toggle('hidden', p !== page));
+  ['order', 'menu', 'orders', 'customers', 'settings'].forEach(p => $('page-' + p).classList.toggle('hidden', p !== page));
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
   $('bar').classList.toggle('hidden', page !== 'order');
   document.body.classList.toggle('no-bar', page !== 'order');
@@ -360,6 +371,7 @@ function go(page) {
   if (page === 'order') reloadMenu();
   if (page === 'menu') loadDraft();
   if (page === 'orders') loadOrders();
+  if (page === 'customers') loadCustomers();
   if (page === 'settings') showQr();
 }
 
@@ -376,8 +388,12 @@ async function reloadMenu() {
   } catch (e) { toast(errText(e)); }
 }
 
+let hiddenAt = 0;
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && S.pin && S.page === 'order') reloadMenu();
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (!S.pin) return;
+  if (Date.now() - hiddenAt > LOCK_AFTER) lock();
+  else if (S.page === 'order') reloadMenu();
 });
 
 /* ---------- Taking an order ---------- */
@@ -873,6 +889,38 @@ async function loadOrders() {
   } catch (e) { box.textContent = errText(e); }
 }
 
+/* ---------- Customers page ---------- */
+
+async function loadCustomers() {
+  $('customerSearch').value = '';
+  renderCustomers();
+  try {
+    S.customers = await api('refreshCustomers', S.pin);
+    renderCustomers();
+  } catch (e) { toast(errText(e)); }
+}
+
+function renderCustomers() {
+  const typed = $('customerSearch').value.trim().toLowerCase(), box = $('customerList');
+  const hits = S.customers.filter(c => (c.name + ' ' + c.address).toLowerCase().includes(typed));
+  const label = hits.length + (hits.length === 1 ? ' customer' : ' customers');
+  $('customerCount').textContent = !S.customers.length ? 'No customers yet. They are saved with each order.'
+    : !hits.length ? 'No match.' : hits.length > 100 ? label + '. Showing the first 100.' : label;
+  box.textContent = '';
+  hits.slice(0, 100).forEach(c => {
+    const row = document.createElement('div'), orders = c.orders || 1;
+    row.className = 'order';
+    row.innerHTML = '<div class="who"><span></span><small></small></div><div class="amt"><span></span><small></small></div>';
+    row.querySelector('.who span').textContent = c.name;
+    row.querySelector('.who small').textContent = c.address;
+    row.querySelector('.amt span').textContent = orders + (orders === 1 ? ' order' : ' orders');
+    row.querySelector('.amt small').textContent = c.last || '';
+    box.appendChild(row);
+  });
+}
+
+$('customerSearch').addEventListener('input', renderCustomers);
+
 /* ---------- Settings page ---------- */
 
 $('qrPick').addEventListener('click', () => $('qrFile').click());
@@ -910,7 +958,6 @@ $('savePins').addEventListener('click', async () => {
   try {
     await api('changePins', S.pin, owner, staff);
     S.pin = owner;
-    remember(owner);
     $('ownerPin').value = $('staffPin').value = '';
     toast('PINs changed.');
   } catch (e) { toast(errText(e)); }
