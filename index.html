@@ -110,12 +110,8 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
 <div id="login" class="login hidden">
   <img id="loginLogo" alt="Simone's Basket">
   <form id="pinForm">
-    <div id="firstRun" class="hidden">
-      <p class="muted">First time here. Choose two PINs of 4 to 8 digits. Staff use theirs to take orders. Yours also opens the menu and settings pages.</p>
-      <label><span>Owner PIN</span><input id="newOwner" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
-      <label><span>Staff PIN</span><input id="newStaff" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
-    </div>
-    <label id="pinField"><span>Enter your PIN</span><input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+    <p id="firstRun" class="muted hidden">First time here. Choose a PIN of 4 to 8 digits. Everyone uses this same PIN to open the app.</p>
+    <label id="pinField"><span id="pinLabel">Enter your PIN</span><input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
     <button class="btn" id="pinBtn" type="submit">Open</button>
   </form>
 </div>
@@ -136,7 +132,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
       <div class="card">
         <h2>Today's menu</h2>
         <div id="tiles" class="tiles"></div>
-        <p id="noMenu" class="muted hidden" style="margin:0">No menu yet for today. The owner can add it on the Menu page.</p>
+        <p id="noMenu" class="muted hidden" style="margin:0">No menu yet for today. Add it on the Menu page.</p>
       </div>
       <div id="cartCard" class="card hidden">
         <h2>Order</h2>
@@ -156,7 +152,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
         <div id="gcashBox" class="qr hidden">
           <img id="qrImg" alt="GCash QR code">
           <div id="qrAmount" style="font-weight:800"></div>
-          <p id="noQr" class="muted hidden" style="margin:0">No GCash QR yet. The owner can upload it on the Settings page.</p>
+          <p id="noQr" class="muted hidden" style="margin:0">No GCash QR yet. Upload it on the Settings page.</p>
         </div>
       </div>
     </section>
@@ -191,10 +187,9 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
         <button type="button" class="btn" id="qrPick">Upload GCash QR picture</button>
       </div>
       <div class="card">
-        <h2>Change PINs</h2>
-        <label><span>New owner PIN</span><input id="ownerPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
-        <label><span>New staff PIN</span><input id="staffPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
-        <button type="button" class="btn" id="savePins">Save PINs</button>
+        <h2>Change PIN</h2>
+        <label><span>New PIN</span><input id="newPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+        <button type="button" class="btn" id="savePin">Save PIN</button>
       </div>
       <div class="card">
         <h2>Database</h2>
@@ -236,7 +231,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
 const API_URL = 'https://script.google.com/macros/s/AKfycbzZlmrr1FsXUTkPk-EDjFGX2ALedcjaJc3OT6zPDr6H_L9R58spjOP4YNl6xmoDfhty/exec';
 const LOGO = 'logo.jpg';
 const $ = id => document.getElementById(id);
-const S = { pin: '', role: '', menu: [], qr: '', cart: {}, payment: '', clientId: '', draft: [], sheetUrl: '', page: 'order', receipt: null, blob: null, refreshed: 0 };
+const S = { pin: '', menu: [], qr: '', cart: {}, payment: '', clientId: '', draft: [], sheetUrl: '', page: 'order', receipt: null, blob: null, refreshed: 0 };
 
 const peso = n => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -288,7 +283,7 @@ async function start() {
   showLogin(true);
   try {
     const st = await api('status');
-    if (!st.ready) { $('firstRun').classList.remove('hidden'); $('pinField').classList.add('hidden'); $('pinBtn').textContent = 'Save PINs'; S.firstRun = true; return; }
+    if (!st.ready) { $('firstRun').classList.remove('hidden'); $('pinLabel').textContent = 'Choose a PIN'; $('pinBtn').textContent = 'Save PIN'; S.firstRun = true; return; }
     const saved = recall();
     if (saved) await enter(saved).catch(() => { remember(''); showLogin(true); });
   } catch (e) { toast(errText(e)); }
@@ -301,11 +296,9 @@ function showLogin(on) {
 
 async function enter(pin) {
   const d = await api('bootstrap', pin);
-  Object.assign(S, { pin, role: d.role, menu: d.menu, qr: d.qr, sheetUrl: d.sheetUrl, refreshed: Date.now() });
+  Object.assign(S, { pin, menu: d.menu, qr: d.qr, sheetUrl: d.sheetUrl, refreshed: Date.now() });
   remember(pin);
   $('sheetLink').href = d.sheetUrl || '#';
-  document.querySelector('[data-page=menu]').classList.toggle('hidden', d.role !== 'owner');
-  document.querySelector('[data-page=settings]').classList.toggle('hidden', d.role !== 'owner');
   showQr();
   newOrder();
   showLogin(false);
@@ -317,15 +310,14 @@ $('pinForm').addEventListener('submit', async e => {
   const btn = $('pinBtn');
   busy(btn, true, 'Opening…');
   try {
+    if (S.firstRun) await api('setupPin', $('pin').value);
+    await enter($('pin').value);
     if (S.firstRun) {
-      const owner = $('newOwner').value, staff = $('newStaff').value;
-      await api('setupPins', owner, staff);
       S.firstRun = false;
-      await enter(owner);
-    } else {
-      await enter($('pin').value);
+      $('firstRun').classList.add('hidden');
+      $('pinLabel').textContent = 'Enter your PIN';
     }
-    $('pin').value = $('newOwner').value = $('newStaff').value = '';
+    $('pin').value = '';
   } catch (err) { toast(errText(err)); }
   busy(btn, false);
 });
@@ -663,7 +655,7 @@ function showSheet(receipt, blob, copied, fromSales) {
   $('sheetImg').src = URL.createObjectURL(blob);
   const file = new File([blob], receipt.no + '.png', { type: 'image/png' });
   $('shareBtn').classList.toggle('hidden', !(navigator.canShare && navigator.canShare({ files: [file] })));
-  $('voidBtn').classList.toggle('hidden', !(fromSales && S.role === 'owner' && receipt.status !== 'Voided'));
+  $('voidBtn').classList.toggle('hidden', !(fromSales && receipt.status !== 'Voided'));
   delete $('voidBtn').dataset.armed;
   delete $('voidBtn').dataset.label;
   $('voidBtn').textContent = 'Void this order';
@@ -846,15 +838,15 @@ $('qrFile').addEventListener('change', async e => {
   busy(btn, false);
 });
 
-$('savePins').addEventListener('click', async () => {
-  const btn = $('savePins'), owner = $('ownerPin').value, staff = $('staffPin').value;
+$('savePin').addEventListener('click', async () => {
+  const btn = $('savePin'), pin = $('newPin').value;
   busy(btn, true, 'Saving…');
   try {
-    await api('changePins', S.pin, owner, staff);
-    S.pin = owner;
-    remember(owner);
-    $('ownerPin').value = $('staffPin').value = '';
-    toast('PINs changed.');
+    await api('changePin', S.pin, pin);
+    S.pin = pin;
+    remember(pin);
+    $('newPin').value = '';
+    toast('PIN changed.');
   } catch (e) { toast(errText(e)); }
   busy(btn, false);
 });
