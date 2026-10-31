@@ -321,6 +321,9 @@ $('pinForm').addEventListener('submit', async e => {
       const owner = $('newOwner').value, staff = $('newStaff').value;
       await api('setupPins', owner, staff);
       S.firstRun = false;
+      $('firstRun').classList.add('hidden');
+      $('pinField').classList.remove('hidden');
+      btn.dataset.label = 'Open';
       await enter(owner);
     } else {
       await enter($('pin').value);
