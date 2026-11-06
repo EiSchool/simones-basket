@@ -20,10 +20,10 @@ html,body{margin:0;background:var(--paper);color:var(--brown);font:600 16px/1.35
 body{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
 body.no-bar{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 h2{font:400 21px/1.2 Marcellus,Georgia,serif;margin:0 0 10px;letter-spacing:.3px}
-button,input{font:inherit;color:inherit}
+button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
-input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--white);outline:none;font-size:16px}
-input:focus{border-color:var(--blue)}
+input,select{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--white);outline:none;font-size:16px}
+input:focus,select:focus{border-color:var(--blue)}
 label{display:block;font-size:14px;margin-bottom:12px}
 label>span{display:block;margin-bottom:4px;color:var(--brown)}
 .hidden{display:none!important}
@@ -71,7 +71,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
 .row{display:flex;gap:10px}
 .row>*{flex:1;min-width:0}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:7;display:flex;background:var(--white);border-top:3px dashed var(--blue);padding-bottom:env(safe-area-inset-bottom)}
-.tabs button{flex:1;height:58px;font-size:12px;font-weight:800;color:var(--brown-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tabs button{flex:1;min-width:0;height:58px;font-size:11px;font-weight:800;color:var(--brown-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .tabs button.on{color:var(--pink-deep)}
 .tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .menu-row{padding:12px 0;border-top:1px dashed var(--line)}
@@ -105,6 +105,22 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
 .flag{padding:9px 12px;margin-bottom:10px;border-radius:10px;text-align:center;font-weight:800;font-size:14px;background:var(--blue-soft);color:var(--blue-deep)}
 .flag.bad{background:var(--pink-soft);color:var(--pink-deep)}
 .sheet .btn{margin-top:10px}
+.balance{text-align:center;background:var(--pink-soft);border-color:var(--pink)}
+.balance .big{font:800 36px/1.1 Nunito,sans-serif;color:var(--pink-deep);margin:4px 0 12px;overflow-wrap:anywhere}
+.balance .big.neg{color:var(--brown)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.split div{background:var(--white);border-radius:12px;padding:8px;font-size:13px}
+.split b{display:block;font-size:17px;overflow-wrap:anywhere}
+.in{color:var(--blue-deep)}
+.out{color:var(--pink-deep)}
+.entry{display:block;width:100%;padding:10px 0;border-top:1px dashed var(--line);text-align:left}
+.entry:first-child{border-top:0}
+.entry .mline{display:flex;gap:10px;align-items:center}
+.entry .what{flex:1;min-width:0;overflow-wrap:anywhere}
+.entry .what small,.entry .amt small{display:block;color:var(--brown-soft);font-size:13px;font-weight:600}
+.entry .amt{text-align:right;font-weight:800;white-space:nowrap}
+.entry .btn{margin-top:8px;padding:10px}
+.totals{display:flex;justify-content:space-between;gap:10px;margin:4px 0 6px;font-size:14px}
 .toast{position:fixed;left:16px;right:16px;bottom:calc(138px + env(safe-area-inset-bottom));z-index:30;max-width:480px;margin:0 auto;padding:12px 14px;border-radius:12px;background:var(--brown);color:var(--white);text-align:center;font-weight:700}
 .loading{padding:40px;text-align:center;color:var(--brown-soft)}
 </style>
@@ -197,6 +213,34 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
       </div>
     </section>
 
+    <section id="page-money" class="hidden">
+      <div class="card balance">
+        <div class="muted">Bakery money now</div>
+        <div id="mBalance" class="big">₱0.00</div>
+        <div class="split">
+          <div>In this month<b id="mMonthIn" class="in">₱0.00</b></div>
+          <div>Out this month<b id="mMonthOut" class="out">₱0.00</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Add money in or out</h2>
+        <div class="seg">
+          <button type="button" id="mTypeIn">Deposit</button>
+          <button type="button" id="mTypeOut">Withdrawal</button>
+        </div>
+        <label><span>Amount (₱)</span><input id="mAmount" type="number" inputmode="decimal" min="0" step="any"></label>
+        <label><span>Date</span><input id="mDate" type="date"></label>
+        <label><span id="mLabelText">Note (optional)</span><input id="mLabel" maxlength="200" autocomplete="off"></label>
+        <button type="button" class="btn" id="mSave">Save deposit</button>
+      </div>
+      <div class="card">
+        <h2>Money history</h2>
+        <label><span>Show</span><select id="mMonth"></select></label>
+        <div id="mTotals" class="totals"></div>
+        <div id="mList"></div>
+      </div>
+    </section>
+
     <section id="page-settings" class="hidden">
       <div class="card qr" style="text-align:left">
         <h2>GCash QR</h2>
@@ -229,6 +273,7 @@ main{max-width:640px;margin:0 auto;padding:14px 16px}
     <button type="button" data-page="menu"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Menu</button>
     <button type="button" data-page="orders"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Sales</button>
     <button type="button" data-page="customers"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 4.5-6 8-6s6.5 1.5 8 6"/></svg>Customers</button>
+    <button type="button" data-page="money"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M3 7l3-4h12l3 4"/><circle cx="16" cy="13.5" r="1.5"/></svg>Money</button>
     <button type="button" data-page="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Settings</button>
   </nav>
 </div>
@@ -321,6 +366,7 @@ async function enter(pin) {
   $('sheetLink').href = d.sheetUrl || '#';
   document.querySelector('[data-page=menu]').classList.toggle('hidden', d.role !== 'owner');
   document.querySelector('[data-page=customers]').classList.toggle('hidden', d.role !== 'owner');
+  document.querySelector('[data-page=money]').classList.toggle('hidden', d.role !== 'owner');
   document.querySelector('[data-page=settings]').classList.toggle('hidden', d.role !== 'owner');
   showQr();
   newOrder();
@@ -351,6 +397,8 @@ $('pinForm').addEventListener('submit', async e => {
 
 function lock() {
   Object.assign(S, { pin: '', role: '', customers: [], qr: '' });
+  Object.assign(M, { entries: [], open: '' });
+  $('mList').textContent = '';
   $('sheet').classList.add('hidden');
   showLogin(true);
   document.body.classList.add('no-bar');
@@ -362,7 +410,7 @@ $('logout').addEventListener('click', lock);
 
 function go(page) {
   S.page = page;
-  ['order', 'menu', 'orders', 'customers', 'settings'].forEach(p => $('page-' + p).classList.toggle('hidden', p !== page));
+  ['order', 'menu', 'orders', 'customers', 'money', 'settings'].forEach(p => $('page-' + p).classList.toggle('hidden', p !== page));
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
   $('bar').classList.toggle('hidden', page !== 'order');
   document.body.classList.toggle('no-bar', page !== 'order');
@@ -372,6 +420,7 @@ function go(page) {
   if (page === 'menu') loadDraft();
   if (page === 'orders') loadOrders();
   if (page === 'customers') loadCustomers();
+  if (page === 'money') loadMoney();
   if (page === 'settings') showQr();
 }
 
@@ -920,6 +969,143 @@ function renderCustomers() {
 }
 
 $('customerSearch').addEventListener('input', renderCustomers);
+
+/* ---------- Money page (owner only) ---------- */
+
+const M = { entries: [], type: 'Deposit', clientId: '', month: 'all', open: '' };
+const manilaDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
+const asDate = day => { const [y, m, d] = day.split('-').map(Number); return new Date(y, m - 1, d); };
+const dayLabel = day => asDate(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const monthLabel = ym => asDate(ym + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const signed = e => e.type === 'Deposit' ? e.amount : -e.amount;
+const balanceOf = list => list.reduce((sum, e) => sum + signed(e), 0);
+const signedPeso = n => (n < 0 ? '−' : '') + peso(Math.abs(n));
+
+async function loadMoney() {
+  M.open = '';
+  resetMoneyForm();
+  renderMoney();
+  try {
+    M.entries = await api('moneyEntries', S.pin);
+    renderMoney();
+  } catch (e) { toast(errText(e)); }
+}
+
+function setMoneyType(type) {
+  M.type = type;
+  $('mTypeIn').classList.toggle('on', type === 'Deposit');
+  $('mTypeOut').classList.toggle('on', type === 'Withdrawal');
+  $('mLabelText').textContent = type === 'Deposit' ? 'Note (optional)' : 'What was it for?';
+  $('mLabel').placeholder = type === 'Deposit' ? 'e.g. Sales from today' : 'e.g. Flour and sugar';
+  delete $('mSave').dataset.armed;
+  $('mSave').textContent = type === 'Deposit' ? 'Save deposit' : 'Save withdrawal';
+}
+
+function resetMoneyForm() {
+  $('mAmount').value = $('mLabel').value = '';
+  $('mDate').value = $('mDate').max = manilaDay();
+  M.clientId = newId();
+  setMoneyType(M.type);
+}
+
+$('mTypeIn').addEventListener('click', () => setMoneyType('Deposit'));
+$('mTypeOut').addEventListener('click', () => setMoneyType('Withdrawal'));
+['mAmount', 'mDate', 'mLabel'].forEach(id => $(id).addEventListener('input', () => setMoneyType(M.type)));
+
+$('mSave').addEventListener('click', async () => {
+  const btn = $('mSave'), amount = parseFloat($('mAmount').value), date = $('mDate').value, label = $('mLabel').value.trim();
+  if (!(amount > 0)) return toast('Enter an amount.');
+  if (!date) return toast('Choose a date.');
+  if (M.type === 'Withdrawal' && !label) return toast('Say what the money was for.');
+  if (M.type === 'Withdrawal' && amount > balanceOf(M.entries) && !btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = 'More than the balance. Tap again to save';
+    return;
+  }
+  busy(btn, true, 'Saving…');
+  try {
+    M.entries = await api('addMoney', S.pin, { type: M.type, amount, date, label, clientId: M.clientId });
+    resetMoneyForm();
+    renderMoney();
+    toast(M.type === 'Deposit' ? 'Deposit saved.' : 'Withdrawal saved.');
+  } catch (e) { toast(errText(e)); }
+  busy(btn, false);
+  setMoneyType(M.type);
+});
+
+function renderMoney() {
+  const sorted = M.entries.slice().sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at);
+  let running = 0;
+  sorted.forEach(e => { running += signed(e); e.after = running; });
+
+  $('mBalance').textContent = signedPeso(running);
+  $('mBalance').classList.toggle('neg', running < 0);
+  const sum = (list, type) => list.filter(e => e.type === type).reduce((n, e) => n + e.amount, 0);
+  const current = sorted.filter(e => e.date.startsWith(manilaDay().slice(0, 7)));
+  $('mMonthIn').textContent = peso(sum(current, 'Deposit'));
+  $('mMonthOut').textContent = peso(sum(current, 'Withdrawal'));
+
+  const months = [...new Set(sorted.map(e => e.date.slice(0, 7)))].sort().reverse();
+  if (M.month !== 'all' && !months.includes(M.month)) M.month = 'all';
+  const select = $('mMonth');
+  select.textContent = '';
+  [['all', 'All entries']].concat(months.map(m => [m, monthLabel(m)])).forEach(([value, text]) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    select.appendChild(option);
+  });
+  select.value = M.month;
+
+  const shown = sorted.filter(e => M.month === 'all' || e.date.startsWith(M.month)).reverse();
+  $('mTotals').innerHTML = '<span class="in"></span><span class="out"></span>';
+  $('mTotals').firstChild.textContent = 'In ' + peso(sum(shown, 'Deposit'));
+  $('mTotals').lastChild.textContent = 'Out ' + peso(sum(shown, 'Withdrawal'));
+
+  const box = $('mList');
+  box.textContent = shown.length ? '' : 'Nothing recorded yet. Add the money the bakery has now as a first deposit.';
+  shown.forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'entry';
+    row.innerHTML = '<div class="mline"><div class="what"><span></span><small></small></div><div class="amt"><span></span><small></small></div></div>';
+    row.querySelector('.what span').textContent = e.label || e.type;
+    row.querySelector('.what small').textContent = dayLabel(e.date) + ' · ' + e.type;
+    const amt = row.querySelector('.amt span');
+    amt.textContent = (e.type === 'Deposit' ? '+' : '−') + peso(e.amount);
+    amt.className = e.type === 'Deposit' ? 'in' : 'out';
+    row.querySelector('.amt small').textContent = 'Balance ' + signedPeso(e.after);
+    if (M.open === e.id) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn warn';
+      remove.textContent = 'Remove this entry';
+      remove.addEventListener('click', ev => { ev.stopPropagation(); removeMoney(e, remove); });
+      row.appendChild(remove);
+    }
+    row.addEventListener('click', () => { M.open = M.open === e.id ? '' : e.id; renderMoney(); });
+    box.appendChild(row);
+  });
+}
+
+async function removeMoney(e, btn) {
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = 'Tap again to remove';
+    return;
+  }
+  busy(btn, true, 'Removing…');
+  try {
+    M.entries = await api('removeMoney', S.pin, e.id);
+    M.open = '';
+    renderMoney();
+    toast('Entry removed.');
+  } catch (err) {
+    toast(errText(err));
+    busy(btn, false);
+  }
+}
+
+$('mMonth').addEventListener('change', () => { M.month = $('mMonth').value; M.open = ''; renderMoney(); });
 
 /* ---------- Settings page ---------- */
 
